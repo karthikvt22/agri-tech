@@ -1,63 +1,54 @@
 import streamlit as st
-import pandas as pd
-import joblib
-import datetime
+import numpy as np
+from datetime import date
 
-# Load your trained price prediction model
-model = joblib.load("tomato_price_model.pkl")
+st.set_page_config(page_title="Tomato AI Platform", layout="centered")
 
-# Page configuration
-st.set_page_config(page_title="Tomato Price & Crop Health", layout="centered")
-st.title("🍅 Tomato Price Forecast & 🧪 Crop Health Check")
+st.title("🍅 Tomato Crop Price & Health Analysis")
 
-st.markdown("## 📈 Tomato Price Prediction")
-st.markdown("Upload CSV with columns: `Arrivals (Tonnes)` and `Date`.")
+# ----- SECTION 1: Price Prediction -----
+st.header("📈 Tomato Price Prediction")
 
-# File uploader
-uploaded_file = st.file_uploader("Upload CSV", type="csv")
+arrival = st.slider("Arrivals (Tonnes)", 10, 300, 100)
+day = st.slider("Day of Month", 1, 31, date.today().day)
+month = st.slider("Month", 1, 12, date.today().month)
 
-if uploaded_file:
-    data = pd.read_csv(uploaded_file, parse_dates=["Arrival Date"])
-    data["Day"] = data["Arrival Date"].dt.day
-    data["Month"] = data["Arrival Date"].dt.month
+# Dummy regression equation: price = 5000 - 10*arrival + 20*month + noise
+predicted_price = 5000 - (10 * arrival) + (20 * month) + np.random.randint(-100, 100)
+st.success(f"Predicted Tomato Price: ₹{int(predicted_price)} per quintal")
 
-    if "Arrivals (Tonnes)" in data and "Day" in data and "Month" in data:
-        X = data[["Arrivals (Tonnes)", "Day", "Month"]]
-        prediction = model.predict(X)
-        data["Predicted Modal Price (Rs./Quintal)"] = prediction
-        st.write("### 🔍 Prediction Results", data)
-    else:
-        st.warning("Missing required columns: 'Arrivals (Tonnes)', 'Arrival Date'.")
+# ----- SECTION 2: Crop Health Assessment -----
+st.header("🌱 Crop Health Assessment")
 
-st.markdown("---")
-st.markdown("## 🌱 Crop Health Assessment")
+N = st.number_input("🌿 Nitrogen (N)", 0, 300, 100)
+P = st.number_input("🌸 Phosphorus (P)", 0, 300, 80)
+K = st.number_input("🍂 Potassium (K)", 0, 300, 150)
+age = st.number_input("⏳ Crop Age (in days)", 0, 200, 20)
 
-# Inputs
-N = st.number_input("🌿 Nitrogen (N)", 0, 500, 100)
-P = st.number_input("🌸 Phosphorus (P)", 0, 500, 80)
-K = st.number_input("🍂 Potassium (K)", 0, 500, 150)
-age = st.number_input("⏳ Crop Age (in days)", 0, 150, 20)
-
-# Determine growth stage
+# Determine stage
 if age < 30:
     stage = "Seedling"
-    ideal_N, ideal_P, ideal_K = (50, 100), (30, 60), (100, 150)
 elif age < 60:
     stage = "Vegetative"
-    ideal_N, ideal_P, ideal_K = (100, 150), (60, 80), (100, 200)
-else:
+elif age < 90:
     stage = "Flowering"
-    ideal_N, ideal_P, ideal_K = (80, 120), (50, 70), (120, 180)
+else:
+    stage = "Mature"
 
-def assess(value, ideal_range):
-    if value < ideal_range[0]:
-        return "🔻 Low"
-    elif value > ideal_range[1]:
-        return "🔺 High"
-    return "✅ Optimal"
+def assess(value, low, high):
+    if low <= value <= high:
+        return "✅ Optimal", f"(Ideal: {low}–{high})"
+    elif value < low:
+        return "🔻 Low", f"(Ideal: {low}–{high})"
+    else:
+        return "🔺 High", f"(Ideal: {low}–{high})"
 
-st.markdown("### 🧾 Health Assessment")
-st.markdown(f"**🌱 Growth Stage:** `{stage}`")
-st.markdown(f"- **Nitrogen (N):** {assess(N, ideal_N)} (Ideal: {ideal_N[0]}–{ideal_N[1]})")
-st.markdown(f"- **Phosphorus (P):** {assess(P, ideal_P)} (Ideal: {ideal_P[0]}–{ideal_P[1]})")
-st.markdown(f"- **Potassium (K):** {assess(K, ideal_K)} (Ideal: {ideal_K[0]}–{ideal_K[1]})")
+n_status, n_range = assess(N, 50, 100)
+p_status, p_range = assess(P, 30, 60)
+k_status, k_range = assess(K, 100, 150)
+
+st.subheader("📋 Health Assessment")
+st.markdown(f"🌵 **Growth Stage:** {stage}")
+st.markdown(f"- **Nitrogen (N):** {n_status} {n_range}")
+st.markdown(f"- **Phosphorus (P):** {p_status} {p_range}")
+st.markdown(f"- **Potassium (K):** {k_status} {k_range}")
