@@ -1,66 +1,63 @@
+import streamlit as st
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error
-import matplotlib.pyplot as plt
-import seaborn as sns
+import joblib
+import datetime
 
-# Load the dataset
-data = pd.read_csv('combined_2021_tomato_data.csv')
+# Load your trained price prediction model
+model = joblib.load("tomato_price_model.pkl")
 
-# Preview the first few rows of the dataset
-print("Data preview:")
-print(data.head())
+# Page configuration
+st.set_page_config(page_title="Tomato Price & Crop Health", layout="centered")
+st.title("🍅 Tomato Price Forecast & 🧪 Crop Health Check")
 
-# Check column names to confirm the columns
-print("Columns in the data:", data.columns)
+st.markdown("## 📈 Tomato Price Prediction")
+st.markdown("Upload CSV with columns: `Arrivals (Tonnes)` and `Date`.")
 
-# Convert 'Market Arrival Date' to datetime
-data['Market Arrival Date'] = pd.to_datetime(data['Market Arrival Date'])
+# File uploader
+uploaded_file = st.file_uploader("Upload CSV", type="csv")
 
-# Fill missing values in 'Market' column with 'Unknown' (or any appropriate strategy)
-data['Market'] = data['Market'].fillna('Unknown')
+if uploaded_file:
+    data = pd.read_csv(uploaded_file, parse_dates=["Arrival Date"])
+    data["Day"] = data["Arrival Date"].dt.day
+    data["Month"] = data["Arrival Date"].dt.month
 
-# You can handle missing values for numerical columns as well if needed, for example:
-# data['Minimum Price(Rs./Quintal)'].fillna(data['Minimum Price(Rs./Quintal)'].mean(), inplace=True)
-# data['Maximum Price(Rs./Quintal)'].fillna(data['Maximum Price(Rs./Quintal)'].mean(), inplace=True)
-# data['Modal Price(Rs./Quintal)'].fillna(data['Modal Price(Rs./Quintal)'].mean(), inplace=True)
+    if "Arrivals (Tonnes)" in data and "Day" in data and "Month" in data:
+        X = data[["Arrivals (Tonnes)", "Day", "Month"]]
+        prediction = model.predict(X)
+        data["Predicted Modal Price (Rs./Quintal)"] = prediction
+        st.write("### 🔍 Prediction Results", data)
+    else:
+        st.warning("Missing required columns: 'Arrivals (Tonnes)', 'Arrival Date'.")
 
-# Selecting the relevant features for prediction
-X = data[['Market', 'Market Arrival Date', 'Variety', 'Minimum Price(Rs./Quintal)', 'Maximum Price(Rs./Quintal)']]
+st.markdown("---")
+st.markdown("## 🌱 Crop Health Assessment")
 
-# Convert categorical variables (like 'Market' and 'Variety') into numerical values using encoding
-X = pd.get_dummies(X, drop_first=True)
+# Inputs
+N = st.number_input("🌿 Nitrogen (N)", 0, 500, 100)
+P = st.number_input("🌸 Phosphorus (P)", 0, 500, 80)
+K = st.number_input("🍂 Potassium (K)", 0, 500, 150)
+age = st.number_input("⏳ Crop Age (in days)", 0, 150, 20)
 
-# Target variable: Modal Price
-y = data['Modal Price(Rs./Quintal)']
+# Determine growth stage
+if age < 30:
+    stage = "Seedling"
+    ideal_N, ideal_P, ideal_K = (50, 100), (30, 60), (100, 150)
+elif age < 60:
+    stage = "Vegetative"
+    ideal_N, ideal_P, ideal_K = (100, 150), (60, 80), (100, 200)
+else:
+    stage = "Flowering"
+    ideal_N, ideal_P, ideal_K = (80, 120), (50, 70), (120, 180)
 
-# Splitting the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+def assess(value, ideal_range):
+    if value < ideal_range[0]:
+        return "🔻 Low"
+    elif value > ideal_range[1]:
+        return "🔺 High"
+    return "✅ Optimal"
 
-# Creating a linear regression model
-model = LinearRegression()
-
-# Fitting the model to the training data
-model.fit(X_train, y_train)
-
-# Making predictions on the test set
-y_pred = model.predict(X_test)
-
-# Evaluate the model's performance
-mse = mean_squared_error(y_test, y_pred)
-rmse = mse**0.5
-print(f"Root Mean Squared Error: {rmse}")
-
-# Plotting the actual vs predicted values
-plt.figure(figsize=(10, 6))
-sns.scatterplot(x=y_test, y=y_pred)
-plt.xlabel("Actual Modal Price")
-plt.ylabel("Predicted Modal Price")
-plt.title("Actual vs Predicted Modal Price")
-plt.show()
-
-# To see feature importance (coefficients of the linear regression model)
-print("Model Coefficients:")
-for feature, coef in zip(X.columns, model.coef_):
-    print(f"{feature}: {coef}")
+st.markdown("### 🧾 Health Assessment")
+st.markdown(f"**🌱 Growth Stage:** `{stage}`")
+st.markdown(f"- **Nitrogen (N):** {assess(N, ideal_N)} (Ideal: {ideal_N[0]}–{ideal_N[1]})")
+st.markdown(f"- **Phosphorus (P):** {assess(P, ideal_P)} (Ideal: {ideal_P[0]}–{ideal_P[1]})")
+st.markdown(f"- **Potassium (K):** {assess(K, ideal_K)} (Ideal: {ideal_K[0]}–{ideal_K[1]})")
