@@ -14,27 +14,29 @@ mode = st.sidebar.radio("Choose Mode", ["📈 Tomato Price Prediction", "🌿 To
 if mode == "📈 Tomato Price Prediction":
     st.header("📈 Tomato Price Prediction Tool (India-based)")
 
-    arrival = st.slider("Tomato Arrivals (Tonnes)", 10, 300, 100)
-    
-    # Calendar date picker
-    selected_date = st.date_input("📅 Select Date", date.today())
-    day = selected_date.day
-    month = selected_date.month
+    with st.form("price_form"):
+        arrival = st.slider("Tomato Arrivals (Tonnes)", 10, 300, 100)
+        selected_date = st.date_input("📅 Select Date", date.today())
+        submit = st.form_submit_button("🔍 Predict Price")
 
-    # Simplified regression logic for demo
-    predicted_price = 5000 - (10 * arrival) + (25 * month) + np.random.randint(-100, 100)
-    st.success(f"🧮 Predicted Market Price: ₹{int(predicted_price)} per quintal")
+    if submit:
+        day = selected_date.day
+        month = selected_date.month
 
-    # Graph: Price vs Arrival
-    st.subheader("📊 Simulated Price Trend")
-    arrivals = np.arange(10, 310, 10)
-    prices = 5000 - 10 * arrivals + 25 * month
-    plt.figure(figsize=(8, 4))
-    plt.plot(arrivals, prices, marker='o', color='tomato')
-    plt.xlabel("Arrivals (Tonnes)")
-    plt.ylabel("Price (₹/quintal)")
-    plt.title("Effect of Arrival Volume on Tomato Price")
-    st.pyplot(plt)
+        with st.spinner("🧮 Calculating best price..."):
+            predicted_price = 5000 - (10 * arrival) + (25 * month) + np.random.randint(-100, 100)
+            st.success(f"🧮 Predicted Market Price: ₹{int(predicted_price)} per quintal")
+
+            # Graph: Price vs Arrival
+            st.subheader("📊 Simulated Price Trend")
+            arrivals = np.arange(10, 310, 10)
+            prices = 5000 - 10 * arrivals + 25 * month
+            plt.figure(figsize=(8, 4))
+            plt.plot(arrivals, prices, marker='o', color='tomato')
+            plt.xlabel("Arrivals (Tonnes)")
+            plt.ylabel("Price (₹/quintal)")
+            plt.title("Effect of Arrival Volume on Tomato Price")
+            st.pyplot(plt)
 
 # -------- Tomato Crop Health Assessment --------
 else:
