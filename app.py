@@ -5,101 +5,98 @@ import matplotlib.pyplot as plt
 from datetime import date
 
 st.set_page_config(page_title="🍅 Tomato AI Assistant", layout="centered")
-st.title("🍅 Tomato AI-Powered Dashboard")
+st.markdown("<h1 style='text-align: center; color: tomato;'>🍅 Tomato AI Dashboard</h1>", unsafe_allow_html=True)
+st.markdown("---")
 
-# -------- Mode Selector --------
-mode = st.sidebar.radio("Choose Mode", ["📈 Tomato Price Prediction", "🌿 Tomato Crop Health"])
+# Sidebar
+mode = st.sidebar.radio("🔘 Choose Mode", ["📈 Price Prediction", "🌿 Crop Health"])
 
-# -------- Tomato Price Prediction --------
-if mode == "📈 Tomato Price Prediction":
-    st.header("📈 Tomato Price Prediction Tool (India-based)")
+# ------------------ PRICE PREDICTION ------------------ #
+if mode == "📈 Price Prediction":
+    st.subheader("🔮 Predict Tomato Market Price")
+    st.markdown("Use AI to predict the tomato market price based on date and arrival volume.")
 
     with st.form("price_form"):
-        arrival = st.slider("Tomato Arrivals (Tonnes)", 10, 300, 100)
-        selected_date = st.date_input("📅 Select Date", date.today())
-        submit = st.form_submit_button("🔍 Predict Price")
+        c1, c2 = st.columns([1, 1])
+        with c1:
+            arrival = st.slider("🚛 Arrival Volume (Tonnes)", 10, 300, 100)
+        with c2:
+            selected_date = st.date_input("📅 Market Date", date.today())
 
-    if submit:
-        day = selected_date.day
-        month = selected_date.month
+        st.markdown("<br>", unsafe_allow_html=True)
+        submitted = st.form_submit_button("🔍 Predict Price")
 
-        with st.spinner("🧮 Calculating best price..."):
+    if submitted:
+        with st.spinner("🧠 Crunching data..."):
+            day = selected_date.day
+            month = selected_date.month
             predicted_price = 5000 - (10 * arrival) + (25 * month) + np.random.randint(-100, 100)
-            st.success(f"🧮 Predicted Market Price: ₹{int(predicted_price)} per quintal")
+            st.success(f"💰 **Predicted Price**: ₹{int(predicted_price)} per quintal")
 
-            # Graph: Price vs Arrival
-            st.subheader("📊 Simulated Price Trend")
+            # Graph
+            st.markdown("---")
+            st.subheader("📊 Impact of Arrival on Price")
             arrivals = np.arange(10, 310, 10)
             prices = 5000 - 10 * arrivals + 25 * month
-            plt.figure(figsize=(8, 4))
-            plt.plot(arrivals, prices, marker='o', color='tomato')
-            plt.xlabel("Arrivals (Tonnes)")
-            plt.ylabel("Price (₹/quintal)")
-            plt.title("Effect of Arrival Volume on Tomato Price")
-            st.pyplot(plt)
+            fig, ax = plt.subplots(figsize=(8, 4))
+            ax.plot(arrivals, prices, marker='o', color='tomato')
+            ax.set_xlabel("Arrival Volume (Tonnes)")
+            ax.set_ylabel("Price (₹/quintal)")
+            ax.set_title("Tomato Price vs Arrival Volume")
+            st.pyplot(fig)
 
-# -------- Tomato Crop Health Assessment --------
+# ------------------ CROP HEALTH ------------------ #
 else:
-    st.header("🌿 Tomato Crop Health Analysis")
+    st.subheader("🧪 Tomato Crop Health Checker")
+    st.markdown("Check if your crop's nutrient levels match its growth stage requirements.")
 
-    # NPK input ranges specific to tomatoes
-    N = st.number_input("🌿 Nitrogen (N) in kg/ha", 0, 300, 100)
-    P = st.number_input("🌸 Phosphorus (P) in kg/ha", 0, 300, 60)
-    K = st.number_input("🍂 Potassium (K) in kg/ha", 0, 300, 120)
-    age = st.number_input("⏳ Tomato Crop Age (days)", 0, 200, 40)
+    st.markdown("### 🌿 Nutrient Inputs")
+    c1, c2, c3, c4 = st.columns(4)
+    with c1: N = st.number_input("Nitrogen (N)", 0, 300, 100)
+    with c2: P = st.number_input("Phosphorus (P)", 0, 300, 60)
+    with c3: K = st.number_input("Potassium (K)", 0, 300, 120)
+    with c4: age = st.number_input("Age (Days)", 0, 200, 40)
 
-    # Tomato growth stages
     if age < 30:
         stage = "🍃 Transplant to Vegetative"
-        ideal_ranges = {"N": (80, 120), "P": (50, 70), "K": (80, 100)}
+        ideal = {"N": (80, 120), "P": (50, 70), "K": (80, 100)}
     elif age < 60:
         stage = "🌿 Vegetative to Flowering"
-        ideal_ranges = {"N": (100, 140), "P": (60, 80), "K": (100, 130)}
+        ideal = {"N": (100, 140), "P": (60, 80), "K": (100, 130)}
     elif age < 90:
         stage = "🌸 Flowering to Fruiting"
-        ideal_ranges = {"N": (80, 120), "P": (60, 80), "K": (130, 160)}
+        ideal = {"N": (80, 120), "P": (60, 80), "K": (130, 160)}
     else:
         stage = "🍅 Maturity & Harvest"
-        ideal_ranges = {"N": (60, 100), "P": (50, 70), "K": (120, 150)}
+        ideal = {"N": (60, 100), "P": (50, 70), "K": (120, 150)}
 
-    def assess(val, min_val, max_val):
-        if min_val <= val <= max_val:
-            return "✅ Optimal", f"(Ideal: {min_val}–{max_val})"
-        elif val < min_val:
-            return "🔻 Low", f"(Ideal: {min_val}–{max_val})"
-        else:
-            return "🔺 High", f"(Ideal: {min_val}–{max_val})"
+    def evaluate(val, low, high):
+        if val < low: return "🔻 Low"
+        elif val > high: return "🔺 High"
+        else: return "✅ Optimal"
 
-    n_status, n_range = assess(N, *ideal_ranges["N"])
-    p_status, p_range = assess(P, *ideal_ranges["P"])
-    k_status, k_range = assess(K, *ideal_ranges["K"])
+    st.markdown("---")
+    st.markdown(f"### 🩺 Health Report for Stage: **{stage}**")
 
-    # Health Report
-    st.subheader("🩺 Tomato Health Assessment")
-    st.markdown(f"🕒 **Growth Stage:** {stage}")
-    st.markdown(f"- **Nitrogen (N):** {n_status} {n_range}")
-    st.markdown(f"- **Phosphorus (P):** {p_status} {p_range}")
-    st.markdown(f"- **Potassium (K):** {k_status} {k_range}")
+    st.markdown(f"- **Nitrogen (N):** {evaluate(N, *ideal['N'])} _(Ideal: {ideal['N'][0]}–{ideal['N'][1]})_")
+    st.markdown(f"- **Phosphorus (P):** {evaluate(P, *ideal['P'])} _(Ideal: {ideal['P'][0]}–{ideal['P'][1]})_")
+    st.markdown(f"- **Potassium (K):** {evaluate(K, *ideal['K'])} _(Ideal: {ideal['K'][0]}–{ideal['K'][1]})_")
 
-    # Graph - NPK levels
-    st.subheader("📊 Nutrient Levels vs Ideal Ranges")
-    nutrients = ['Nitrogen (N)', 'Phosphorus (P)', 'Potassium (K)']
-    values = [N, P, K]
-    ideal_min = [ideal_ranges["N"][0], ideal_ranges["P"][0], ideal_ranges["K"][0]]
-    ideal_max = [ideal_ranges["N"][1], ideal_ranges["P"][1], ideal_ranges["K"][1]]
-
+    # Graph
+    st.markdown("---")
+    st.subheader("📊 Nutrient Analysis Chart")
     df = pd.DataFrame({
-        'Nutrient': nutrients,
-        'Current': values,
-        'Ideal Min': ideal_min,
-        'Ideal Max': ideal_max
+        'Nutrient': ['Nitrogen', 'Phosphorus', 'Potassium'],
+        'Current': [N, P, K],
+        'Ideal Min': [ideal['N'][0], ideal['P'][0], ideal['K'][0]],
+        'Ideal Max': [ideal['N'][1], ideal['P'][1], ideal['K'][1]],
     })
 
     fig, ax = plt.subplots(figsize=(8, 4))
-    ax.bar(df['Nutrient'], df['Current'], label='Current', color='mediumseagreen')
+    ax.bar(df['Nutrient'], df['Current'], label='Current', color='seagreen')
     ax.plot(df['Nutrient'], df['Ideal Min'], 'r--', label='Ideal Min')
     ax.plot(df['Nutrient'], df['Ideal Max'], 'g--', label='Ideal Max')
     ax.set_ylabel("kg/ha")
-    ax.set_title("NPK Analysis for Tomato")
+    ax.set_title("Current vs Ideal Nutrient Levels")
     ax.legend()
     st.pyplot(fig)
