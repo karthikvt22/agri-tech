@@ -15,8 +15,11 @@ if mode == "📈 Tomato Price Prediction":
     st.header("📈 Tomato Price Prediction Tool (India-based)")
 
     arrival = st.slider("Tomato Arrivals (Tonnes)", 10, 300, 100)
-    day = st.slider("Day of Month", 1, 31, date.today().day)
-    month = st.slider("Month", 1, 12, date.today().month)
+    
+    # Calendar date picker
+    selected_date = st.date_input("📅 Select Date", date.today())
+    day = selected_date.day
+    month = selected_date.month
 
     # Simplified regression logic for demo
     predicted_price = 5000 - (10 * arrival) + (25 * month) + np.random.randint(-100, 100)
